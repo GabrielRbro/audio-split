@@ -18,8 +18,12 @@ Depois da execução, abra **Actions → Android checks and debug APKs → execu
 
 | APK | Finalidade |
 | --- | --- |
-| `app-debug.apk` | Aplicativo Audio Split com Shizuku |
-| `tone-player-bluetooth-debug.apk` | Tom A, destino desejado Bluetooth |
-| `tone-player-phone-debug.apk` | Tom B, destino desejado alto-falante |
+| `audio-split-0.1.0-debug.apk` | Aplicativo Audio Split com Shizuku |
+| `tom-a-bluetooth-0.1.0-debug.apk` | Tom A, destino desejado Bluetooth |
+| `tom-b-celular-0.1.0-debug.apk` | Tom B, destino desejado alto-falante |
+
+O mesmo artefato inclui instruções e `SHA256SUMS.txt`, com os checksums dos três APKs.
+
+O arquivo `TEST-RESULTS.json` contém o resultado dos testes extraído dos relatórios JUnit dessa compilação. A etapa de empacotamento também imprime a contagem no log e recusa relatórios vazios, falhas, erros ou casos ignorados.
 
 Uma execução com falha precisa ser corrigida antes de considerar os APKs prontos. Uma execução com sucesso comprova a compilação e os checks automatizados; o comportamento físico continua dependendo do [teste no POCO F7](test-protocol.md).

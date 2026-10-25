@@ -10,7 +10,7 @@ Atualizado em 2026-10-25.
 - 18 casos de teste automatizados escritos para transações, ciclo de vida e contrato de diagnóstico.
 - Gradle Wrapper oficial, workflow de CI e empacotamento dos três APKs com checksums.
 
-## Verificado neste ambiente
+## Verificado localmente
 
 - XML dos manifests e recursos válido.
 - Sintaxe dos scripts shell e Python válida.
@@ -18,9 +18,19 @@ Atualizado em 2026-10-25.
 - Scripts do Wrapper correspondentes ao conteúdo oficial.
 - Revisão estática das assinaturas AIDL, acesso às APIs internas e tratamento de falhas.
 
+## Verificado no GitHub Actions
+
+A [execução 40246800048](https://github.com/GabrielRbro/audio-split/actions/runs/40246800048), commit `18afe81e51b5702597a4583f698a7e5b887cbc9b`, concluiu com sucesso:
+
+- Testes `:core:test` e `:app:testDebugUnitTest`.
+- Lint do aplicativo principal e das duas variantes auxiliares.
+- Compilação dos três APKs debug.
+- Publicação dos artefatos de desenvolvimento e dos relatórios.
+
+O pacote de distribuição inclui `TEST-RESULTS.json`, com a contagem extraída dos relatórios JUnit da própria compilação, e `SHA256SUMS.txt`, com os checksums dos três APKs. O empacotamento exige testes descobertos nos dois módulos e ausência de falhas, erros ou casos ignorados.
+
 ## Pendente
 
-- Compilação dos APKs, lint Android e execução dos 18 testes: o ambiente ainda precisa baixar o SDK Android, o Gradle e as dependências. As tentativas de obter acesso adicional de rede ficaram aguardando permissão e foram interrompidas; nenhuma rejeição automática foi informada.
 - Testes físicos do roteamento e da reprodução simultânea no POCO F7, conforme [protocolo](test-protocol.md).
 
-Os arquivos de código-fonte não equivalem a um APK compilado ou a uma confirmação de compatibilidade com o aparelho. Atualizar este documento com os resultados reais após executar `scripts/check-and-build.sh`.
+Compilação e testes automatizados aprovados não comprovam a separação física das saídas nem a reprodução simultânea de Spotify e Instagram. A compatibilidade com o aparelho continua sem confirmação até executar o protocolo físico.

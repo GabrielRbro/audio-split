@@ -31,14 +31,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Verify and assemble
         run: ./gradlew :core:test :app:testDebugUnitTest :app:lintDebug :tone-player:lintBluetoothDebug :tone-player:lintPhoneDebug :app:assembleDebug :tone-player:assembleBluetoothDebug :tone-player:assemblePhoneDebug
+      - name: Package debug APKs
+        run: python3 scripts/package-debug.py
       - uses: actions/upload-artifact@v4
         with:
           name: audio-split-debug
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            tone-player/build/outputs/apk/*/debug/*.apk
-            **/build/reports/tests/
-            **/build/reports/lint-results-*.html
+          path: dist/audio-split-0.1.0-debug/
           if-no-files-found: error
           retention-days: 14
       - name: Preserve check reports

@@ -4,9 +4,11 @@ Aplicativo experimental para investigar a separação do áudio de dois aplicati
 
 **Estado: não testado no aparelho físico.** O primeiro alvo é o POCO F7 com Android 16 e HyperOS 3.0.303.0.WOLMIXM.C06. A existência de permissões ou o registro de uma política de áudio não comprovam que as duas saídas funcionam simultaneamente. Consulte o [registro de compatibilidade](docs/compatibility.md).
 
-O código está implementado; a geração dos APKs e a execução dos testes ainda dependem da instalação do toolchain Android. Veja o [estado da verificação](docs/build-status.md).
+**Os três APKs foram compilados e os checks automatizados passaram no GitHub Actions.** Veja o [estado da verificação](docs/build-status.md).
 
 Também é possível [gerar os APKs pelo GitHub Actions](docs/github-build.md), usando um repositório privado.
+
+Para baixar, abra [GitHub Actions](https://github.com/GabrielRbro/audio-split/actions/workflows/android.yml), escolha a execução mais recente concluída com sucesso e baixe o artefato **audio-split-debug**. Ele reúne o aplicativo principal, os dois tons auxiliares, instruções e checksums. O teste no celular começa em **Preparar o celular**, abaixo.
 
 O objetivo do teste é:
 
