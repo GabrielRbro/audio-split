@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="helper_title">Fonte de áudio de teste</string>
+    <string name="desired_destination">Destino desejado: %1$s</string>
+    <string name="frequency_description">%1$d Hz · pulsos suaves · volume moderado</string>
+    <string name="route_explanation">Este aplicativo gera somente o tom. A saída é decidida pelo Android e pelas regras aplicadas no Audio Split. Confira com os ouvidos e com o diagnóstico se ele sai apenas no destino escolhido.</string>
+    <string name="focus_option">Solicitar foco de áudio</string>
+    <string name="focus_explanation">Deixe desativado para testar primeiro as saídas. Ative nos dois apps auxiliares para avaliar interrupções: o tom respeitará perda de foco, pausando ou parando quando outro app assumir o áudio.</string>
+    <string name="start_tone">Iniciar tom</string>
+    <string name="stop_tone">Parar tom</string>
+    <string name="notification_permission">Permitir notificações</string>
+    <string name="notification_explanation">As notificações permitem parar o teste fora desta tela. Se você negar a permissão, ainda poderá parar por aqui.</string>
+    <string name="usage_instructions">Use os botões físicos para começar com um volume baixo. Abra o outro app auxiliar e deixe os dois tocando. Cada sessão termina automaticamente após 10 minutos.</string>
+    <string name="idle">Tom parado.</string>
+    <string name="starting">Iniciando o teste…</string>
+    <string name="playing_without_focus">Tom em reprodução, sem solicitar foco. Confira a saída real.</string>
+    <string name="playing_with_focus">Tom em reprodução com foco solicitado. Confira a saída real.</string>
+    <string name="paused_for_focus">Tom pausado: outro aplicativo assumiu o foco temporariamente.</string>
+    <string name="stopped_for_focus">Tom parado: outro aplicativo assumiu o foco.</string>
+    <string name="focus_denied">O Android recusou o foco. Nenhum tom foi iniciado.</string>
+    <string name="stopped_by_user">Tom parado por você.</string>
+    <string name="session_expired">Sessão encerrada após 10 minutos. Você pode iniciar outra.</string>
+    <string name="service_stopped">Serviço encerrado. Tom parado.</string>
+    <string name="playback_error">Não foi possível reproduzir o tom: %1$s</string>
+    <string name="channel_name">Teste de áudio</string>
+    <string name="channel_description">Controle da reprodução dos tons auxiliares do Audio Split.</string>
+    <string name="notification_title">%1$s · %2$d Hz</string>
+    <string name="notification_preparing">Preparando a fonte de teste…</string>
+</resources>

@@ -1,0 +1,39 @@
+Audio Split
+Copyright (c) 2026 Audio Split contributors
+
+The original code in this project is licensed under the MIT License.
+
+Third-party components retain their own licenses and notices. This document
+identifies principal dependencies; it does not replace the license information
+distributed with those dependencies.
+
+Shizuku API
+  Project: https://github.com/RikkaApps/Shizuku-API
+  License: Apache License, Version 2.0
+  The Shizuku application is installed separately by the user.
+
+AndroidX / Jetpack Compose
+  Project: https://android.googlesource.com/platform/frameworks/support/
+  License: Apache License, Version 2.0, with component-specific notices where
+  included by the upstream artifacts.
+
+Kotlin standard library
+  Project: https://github.com/JetBrains/kotlin
+  License: Apache License, Version 2.0
+
+Gradle Wrapper 8.11.1
+  Project: https://github.com/gradle/gradle/tree/v8.11.1
+  Copyright 2015-2021 the original authors.
+  License: Apache License, Version 2.0
+  The original wrapper scripts and JAR are included unchanged.
+  Bundled wrapper license: third_party/gradle-wrapper-LICENSE.txt
+
+Apache License, Version 2.0:
+  https://www.apache.org/licenses/LICENSE-2.0
+
+The project references Android platform interfaces through reflection. It does
+not include an Android platform implementation or third-party application audio.
+
+Spotify, Instagram, POCO, Xiaomi and Shizuku are names used to identify tested
+applications, devices or dependencies. This project is not affiliated with their
+respective owners.
