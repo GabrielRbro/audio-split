@@ -33,7 +33,7 @@ O pacote de distribuição inclui `TEST-RESULTS.json`, com a contagem extraída 
 
 ## Pendente
 
-- Configuração única da assinatura de release, conforme [updates.md](updates.md), para publicar o primeiro APK que aceita atualizações futuras.
+- Validação de uma atualização real pelo instalador Android no aparelho, mantendo a assinatura da release 0.2.0.
 - Correção da falha física relatada no POCO F7: iniciar o Spotify leva o áudio do Instagram para o Bluetooth. O novo diagnóstico não equivale a uma correção comprovada.
 
 Compilação e testes automatizados aprovados não comprovam a separação física das saídas. O teste da 0.1.1 não atendeu ao objetivo de saídas exclusivas; a compatibilidade do aparelho continua sem confirmação.
@@ -53,3 +53,9 @@ A [execução 40403172420](https://github.com/GabrielRbro/audio-split/actions/ru
 O job de release não compilou nem publicou o APK assinado porque o secret `ANDROID_SIGNING_CONFIG` ainda não estava configurado. O resultado verde dessa execução não significa que uma release pública esteja disponível. A instalação real de uma atualização pelo próprio aplicativo também continua pendente de validação.
 
 Os 23 testes novos cobrem protocolo/integridade/URLs do atualizador e detecção de divergência persistente das rotas. O emulador não comprova o roteamento Bluetooth do POCO.
+
+## Publicação assinada 0.2.0
+
+Após a configuração do secret, a [execução 40406817432](https://github.com/GabrielRbro/audio-split/actions/runs/40406817432), commit `47c3bdd1c3ea45ae1e9171c7a124e57306f4cc14`, concluiu os 48 testes e as regressões Android 16, compilou o APK de release e verificou seu pacote, versão e certificado fixo com `apksigner` antes de publicar.
+
+A [release pública v0.2.0](https://github.com/GabrielRbro/audio-split/releases/tag/v0.2.0) contém o APK principal, `update.json` e `SHA256SUMS.txt`. O APK tem código de versão 3 e SHA256 `7b54b64c48abc4ca50930d89dcbb1a9aded2d82f5b4a8cfe1d090c3b88d0e4cc`, também informado pelo digest do asset no GitHub. A assinatura estável está ativa; a instalação pelo atualizador e a correção do roteamento no POCO continuam dependendo de validação física.

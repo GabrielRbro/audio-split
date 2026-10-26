@@ -8,7 +8,7 @@ Veja o [estado da verificação](docs/build-status.md) para distinguir os checks
 
 Também é possível [compilar pelo GitHub Actions](docs/github-build.md).
 
-Para instalar, baixe somente o APK principal da [última versão publicada](https://github.com/GabrielRbro/audio-split/releases/latest). A publicação depende da configuração de assinatura fixa no GitHub. Dentro da 0.2.0, use **Atualizações → Verificar atualização** para baixar e abrir a instalação de versões futuras sem procurar APKs no navegador. O Android sempre pede confirmação para instalar. Os geradores Tom A e Tom B são opcionais e permanecem no pacote de desenvolvimento do Actions.
+Para instalar, baixe somente o [APK principal 0.2.0](https://github.com/GabrielRbro/audio-split/releases/download/v0.2.0/audio-split-0.2.0.apk), publicado com assinatura fixa. Dentro da 0.2.0, use **Atualizações → Verificar atualização** para baixar e abrir a instalação de versões futuras sem procurar APKs no navegador. O Android sempre pede confirmação para instalar. Os geradores Tom A e Tom B são opcionais e permanecem no pacote de desenvolvimento do Actions.
 
 ### Primeira instalação com assinatura fixa
 

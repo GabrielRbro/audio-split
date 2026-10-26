@@ -54,6 +54,8 @@ Se o áudio ficar em um destino inesperado, use a restauração, encerre o servi
 
 Use **Exportar diagnóstico** e acrescente suas observações ao registro de compatibilidade. O relatório técnico não grava a mídia reproduzida. Confira nomes e identificadores dos dispositivos antes de compartilhar.
 
+Na versão 0.2.0, após reproduzir a troca para Bluetooth ao iniciar o Spotify, volte ao Audio Split e exporte o relatório antes de aplicar uma nova separação. O motor mantém até 12 amostras recentes dos players escolhidos, mesmo após restaurar a política por uma divergência persistente (`ROUTE_MISMATCH`). Se o firmware não informar os dispositivos efetivos, o relatório registra essa limitação e a conferência auditiva continua necessária. Uma nova aplicação começa outro histórico.
+
 | Sintoma / etapa | Interpretação a verificar |
 | --- | --- |
 | Shizuku indisponível ou acesso recusado | Estado do Shizuku e autorização do aplicativo |
