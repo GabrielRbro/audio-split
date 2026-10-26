@@ -1,4 +1,4 @@
-name: Android checks and debug APKs
+name: Android checks and signed releases
 
 on:
   push:
@@ -51,14 +51,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: audio-split-debug
-          path: dist/audio-split-0.1.1-debug/
+          path: dist/audio-split-0.2.0-debug/
           if-no-files-found: error
           retention-days: 14
       - name: Upload main APK separately
         uses: actions/upload-artifact@v4
         with:
-          name: audio-split-0.1.1-apk
-          path: dist/audio-split-0.1.1-debug/audio-split-0.1.1-debug.apk
+          name: audio-split-0.2.0-debug-apk
+          path: dist/audio-split-0.2.0-debug/audio-split-0.2.0-debug.apk
           if-no-files-found: error
           retention-days: 14
       - name: Preserve check reports
@@ -70,5 +70,72 @@ jobs:
             **/build/reports/tests/
             **/build/reports/lint-results-*.html
             app/build/reports/shell-context-probe.txt
+            app/build/reports/main-activity-smoke.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+  release:
+    needs: verify
+    if: github.repository == 'GabrielRbro/audio-split' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load stable signing configuration
+        id: signing
+        env:
+          ANDROID_SIGNING_CONFIG: ${{ secrets.ANDROID_SIGNING_CONFIG }}
+        run: python3 scripts/load-signing.py
+      - uses: actions/setup-java@v4
+        if: steps.signing.outputs.configured == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        if: steps.signing.outputs.configured == 'true'
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Install release SDK
+        if: steps.signing.outputs.configured == 'true'
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.signing.outputs.configured == 'true'
+      - name: Assemble signed release
+        if: steps.signing.outputs.configured == 'true'
+        run: ./gradlew :app:lintRelease :app:assembleRelease
+      - name: Verify package, certificate and update metadata
+        if: steps.signing.outputs.configured == 'true'
+        run: python3 scripts/prepare-release.py
+      - name: Preserve signed main APK
+        if: steps.signing.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-split-0.2.0-apk
+          path: |
+            dist/release/audio-split-0.2.0.apk
+            dist/release/update.json
+            dist/release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish complete GitHub release
+        if: steps.signing.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/publish-release.py
+      - name: Remove temporary signing material
+        if: always()
+        run: |
+          if [ -n "${AUDIO_SPLIT_KEYSTORE_PATH:-}" ]; then
+            rm -f -- "$AUDIO_SPLIT_KEYSTORE_PATH"
+          fi
+      - name: Preserve release lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-reports
+          path: app/build/reports/lint-results-release.html
           if-no-files-found: ignore
           retention-days: 14

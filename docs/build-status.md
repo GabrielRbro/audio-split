@@ -7,7 +7,8 @@ Atualizado em 2026-10-26.
 - Projeto Android nativo com interface Compose, cliente Shizuku e motor experimental de políticas de áudio por UID.
 - Dois aplicativos auxiliares de teste, com sons distintos e execução em segundo plano.
 - Restauração transacional, monitoramento das conexões e exportação local do diagnóstico.
-- 25 casos de teste automatizados escritos para transações, ciclo de vida, diagnóstico e bloqueio de aplicação após pré-verificação negada.
+- Testes automatizados para transações, ciclo de vida, diagnóstico, pré-verificação e protocolo do atualizador.
+- Atualizações pelo GitHub com assinatura fixa e instalação confirmada pelo Android; publicação depende da configuração do secret do mantenedor.
 - Gradle Wrapper oficial, workflow de CI e empacotamento dos três APKs com checksums.
 
 ## Verificado localmente
@@ -20,20 +21,23 @@ Atualizado em 2026-10-26.
 
 ## Verificado no GitHub Actions
 
-A [execução 40246800048](https://github.com/GabrielRbro/audio-split/actions/runs/40246800048), commit `18afe81e51b5702597a4583f698a7e5b887cbc9b`, concluiu com sucesso:
+A [execução 40249397916](https://github.com/GabrielRbro/audio-split/actions/runs/40249397916), commit `294b3419d440d992fb67af303ad4d7fa1d5fcfbe` (0.1.1), concluiu com sucesso:
 
 - Testes `:core:test` e `:app:testDebugUnitTest`.
 - Lint do aplicativo principal e das duas variantes auxiliares.
 - Compilação dos três APKs debug.
 - Publicação dos artefatos de desenvolvimento e dos relatórios.
+- 25 testes sem falhas, erros ou casos ignorados e sonda real de atribuição shell no emulador Android 16.
 
 O pacote de distribuição inclui `TEST-RESULTS.json`, com a contagem extraída dos relatórios JUnit da própria compilação, e `SHA256SUMS.txt`, com os checksums dos três APKs. O empacotamento exige testes descobertos nos dois módulos e ausência de falhas, erros ou casos ignorados.
 
 ## Pendente
 
-- Testes físicos do roteamento e da reprodução simultânea no POCO F7, conforme [protocolo](test-protocol.md).
+- Checks da versão 0.2.0, incluindo os novos testes do atualizador e detecção de rotas divergentes.
+- Configuração única da assinatura de release, conforme [updates.md](updates.md), para publicar o primeiro APK que aceita atualizações futuras.
+- Correção da falha física relatada no POCO F7: iniciar o Spotify leva o áudio do Instagram para o Bluetooth. O novo diagnóstico não equivale a uma correção comprovada.
 
-Compilação e testes automatizados aprovados não comprovam a separação física das saídas nem a reprodução simultânea de Spotify e Instagram. A compatibilidade com o aparelho continua sem confirmação até executar o protocolo físico.
+Compilação e testes automatizados aprovados não comprovam a separação física das saídas. O teste da 0.1.1 não atendeu ao objetivo de saídas exclusivas; a compatibilidade do aparelho continua sem confirmação.
 
 ## Correção 0.1.1
 

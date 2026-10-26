@@ -9,7 +9,12 @@ import android.os.Build
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
-/** All non-SDK dependencies are confined here. Any mismatch is a compatibility failure. */
+/**
+ * All non-SDK dependencies are confined here. Any mismatch is a compatibility failure.
+ * RENDER registration may reuse an existing HAL output for both devices. A successful
+ * registration therefore does not establish independent per-app routing; the service
+ * separately monitors the actual playback devices and restores a persistent mismatch.
+ */
 internal class Android16AudioPolicy(private val context: Context, private val manager: AudioManager) {
     private val ruleClass = Class.forName("android.media.audiopolicy.AudioMixingRule")
     private val ruleBuilderClass = Class.forName("android.media.audiopolicy.AudioMixingRule\$Builder")

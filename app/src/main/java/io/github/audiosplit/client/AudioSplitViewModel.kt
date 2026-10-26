@@ -14,6 +14,7 @@ import io.github.audiosplit.BuildConfig
 import io.github.audiosplit.ipc.IAudioSplitService
 import java.time.Instant
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -123,6 +124,8 @@ class AudioSplitViewModel(application: Application, private val savedState: Save
     private var refreshJob: Job? = null
     private var binding = false
     private var closed = false
+    private var preparingUpdate = false
+    private var operationEpoch = 0L
     private val args = Shizuku.UserServiceArgs(
         ComponentName(application.packageName, "io.github.audiosplit.engine.AudioSplitUserService"),
     ).processNameSuffix("audio_split").daemon(false).version(BuildConfig.VERSION_CODE).tag("audio-split-android16")
@@ -282,6 +285,46 @@ class AudioSplitViewModel(application: Application, private val savedState: Save
 
     fun restore() { operate { it.restore() } }
 
+    /** Serializes the installer handoff with routing, invalidating commands already queued. */
+    suspend fun withRestoredAudioForUpdate(openInstaller: suspend () -> Unit): Boolean {
+        if (closed || preparingUpdate || _state.value.busy) return false
+        preparingUpdate = true
+        operationEpoch++
+        _state.update { it.copy(busy = true, operationError = null) }
+        try {
+            return ipc.withLock {
+                val target = remote
+                if (target == null || !target.asBinder().isBinderAlive) {
+                    if (_state.value.active) {
+                        _state.update { it.copy(operationError = "Reconecte o motor e restaure o áudio antes de atualizar.") }
+                        return@withLock false
+                    }
+                } else {
+                    try {
+                        val report = withContext(Dispatchers.IO) { target.restore() }
+                        accept(report)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Exception) {
+                        _state.update { it.copy(operationError = "Não foi possível restaurar o áudio antes da atualização: ${describe(error)}") }
+                        return@withLock false
+                    }
+                    val restored = _state.value.snapshot
+                    if (restored == null || restored.active || restored.code != "RESTORED") {
+                        _state.update { it.copy(operationError = "Não foi possível confirmar a restauração do áudio. A instalação não foi iniciada.") }
+                        return@withLock false
+                    }
+                }
+                if (closed) return@withLock false
+                openInstaller()
+                true
+            }
+        } finally {
+            preparingUpdate = false
+            _state.update { it.copy(busy = false) }
+        }
+    }
+
     fun refresh() {
         if (!_state.value.busy && _state.value.backendConnected && refreshJob?.isActive != true) {
             refreshJob = operate(visibleBusy = false) { it.getStatus() }
@@ -327,9 +370,11 @@ class AudioSplitViewModel(application: Application, private val savedState: Save
     }
 
     private fun operate(visibleBusy: Boolean = true, action: (IAudioSplitService) -> String): Job? {
-        if (closed || _state.value.busy) return null
+        if (closed || preparingUpdate || _state.value.busy) return null
+        val epoch = operationEpoch
         return scope.launch {
             ipc.withLock {
+                if (closed || preparingUpdate || epoch != operationEpoch) return@withLock
                 val target = remote
                 if (target == null || !target.asBinder().isBinderAlive) {
                     disconnected("Motor desconectado. Conecte novamente para continuar.")

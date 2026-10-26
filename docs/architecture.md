@@ -28,6 +28,14 @@ As chamadas Binder recebidas do APK precisam ser executadas com identidade shell
 
 Registrar uma política ou receber um retorno de sucesso não comprova o caminho físico do áudio. O estado aplicado é provisório até a verificação do usuário e dos diagnósticos do sistema.
 
+O gerenciador nativo do Android pode reutilizar uma saída já aberta que suporte os dispositivos dos dois mixes `RENDER`. Nesse caso, as regras de UID não criam caminhos de hardware independentes: uma mudança no dispositivo da saída compartilhada pode afetar os dois aplicativos. Isso é compatível com o relato da 0.1.1, mas ainda requer observação no firmware do POCO. Acrescentar `setUidDeviceAffinity` aos mixes atuais também não resolve: o AOSP rejeita afinidades para um UID que já aparece como critério positivo de um mix.
+
+A 0.2.0 observa apenas os players dos aplicativos escolhidos e registra seus dispositivos quando o sistema permite essa leitura. Dispositivos não informados permanecem desconhecidos; a ausência de dados não é tratada como sucesso. Uma divergência persistente durante reprodução simultânea encerra a política experimental e preserva o diagnóstico.
+
+## Atualizações
+
+O atualizador consulta releases estáveis do repositório público `GabrielRbro/audio-split`. O manifesto `update.json` aponta pelo nome para um APK do mesmo release e informa sua versão e SHA256. Após baixar em cache privado, o app confere integridade, identidade do pacote, versão e certificado de assinatura; só então oferece a instalação pelo Android. A sessão de roteamento é restaurada antes de abrir o instalador. A assinatura fixa é um secret do GitHub Actions e não faz parte do repositório.
+
 ## Reprodução simultânea
 
 O foco de áudio é um mecanismo separado. O Android ou os próprios aplicativos podem interromper a reprodução quando outro aplicativo solicita foco. A primeira investigação usa a função nativa de múltiplas fontes de áudio do HyperOS, quando disponível e ativada manualmente.
@@ -47,5 +55,6 @@ O aplicativo não deve declarar suporte ao aparelho enquanto os testes reais de 
 - [Shizuku API e `UserService`](https://github.com/RikkaApps/Shizuku-API)
 - [Código AOSP de `AudioPolicy`](https://android.googlesource.com/platform/frameworks/base/+/master/media/java/android/media/audiopolicy/AudioPolicy.java) — referência da plataforma, não comprovação do comportamento do firmware Xiaomi.
 - [Configuração das políticas de áudio Android](https://source.android.com/docs/core/audio/implement-policy)
+- [Gerenciamento de mixes no AOSP](https://android.googlesource.com/platform/frameworks/av/+/43d2226f56da1e9b8f6d676d24ccaebda359020c/services/audiopolicy/common/managerdefinitions/src/AudioPolicyMix.cpp)
 - [Foco de áudio Android](https://developer.android.com/media/optimize/audio-focus)
 - [Assistente de som Xiaomi](https://www.mi.com/uk/support/article/KA-08490/)

@@ -2,17 +2,17 @@
 
 Aplicativo experimental para investigar a separação do áudio de dois aplicativos entre uma caixa Bluetooth e o alto-falante do celular, usando Shizuku e sem root.
 
-**Estado da versão 0.1.1: teste físico pendente.** O primeiro alvo é o POCO F7 com Android 16 e HyperOS 3.0.303.0.WOLMIXM.C06. A versão 0.1.0 foi bloqueada por uma verificação incorreta do contexto Android; a correção está em 0.1.1. A existência de permissões ou o registro de uma política de áudio não comprovam que as duas saídas funcionam simultaneamente. Consulte o [registro de compatibilidade](docs/compatibility.md).
+**A separação ainda falha no POCO F7 com Android 16 / HyperOS 3.** No teste da 0.1.1, o Instagram toca no celular quando sozinho, mas iniciar o Spotify leva ambos para o Bluetooth. A 0.2.0 acrescenta diagnóstico das saídas efetivas e atualizações pelo aplicativo; ela não apresenta essa falha física como corrigida. Consulte o [registro de compatibilidade](docs/compatibility.md).
 
-**Os três APKs foram compilados e os checks automatizados passaram no GitHub Actions.** Veja o [estado da verificação](docs/build-status.md).
+Veja o [estado da verificação](docs/build-status.md) para distinguir os checks automatizados do teste físico.
 
-Também é possível [gerar os APKs pelo GitHub Actions](docs/github-build.md), usando um repositório privado.
+Também é possível [compilar pelo GitHub Actions](docs/github-build.md).
 
-Para baixar, abra [GitHub Actions](https://github.com/GabrielRbro/audio-split/actions/workflows/android.yml), escolha a execução mais recente concluída com sucesso e baixe **audio-split-0.1.1-apk**, que contém somente o aplicativo principal. Os geradores Tom A e Tom B são opcionais, disponíveis junto das instruções e checksums no pacote completo **audio-split-debug**. O teste no celular começa em **Preparar o celular**, abaixo.
+Para instalar, baixe somente o APK principal da [última versão publicada](https://github.com/GabrielRbro/audio-split/releases/latest). A publicação depende da configuração de assinatura fixa no GitHub. Dentro da 0.2.0, use **Atualizações → Verificar atualização** para baixar e abrir a instalação de versões futuras sem procurar APKs no navegador. O Android sempre pede confirmação para instalar. Os geradores Tom A e Tom B são opcionais e permanecem no pacote de desenvolvimento do Actions.
 
-### Atualização de 0.1.0 para 0.1.1
+### Primeira instalação com assinatura fixa
 
-A versão 0.1.1 corrige uma identificação incorreta do contexto Android que podia bloquear a operação mesmo com o Shizuku conectado como shell. Desinstale somente o Audio Split antigo antes de instalar o novo APK, pois as compilações debug usam assinaturas diferentes. Mantenha o Shizuku, Spotify e Instagram instalados. Depois, autorize novamente o Audio Split no Shizuku e execute **Diagnosticar** antes de aplicar as rotas.
+As versões debug anteriores usavam chaves temporárias diferentes em cada compilação. Antes de migrar para a primeira versão de release com assinatura fixa, restaure o áudio e desinstale somente o Audio Split antigo. Instale o APK de release e autorize novamente no Shizuku. As versões seguintes, assinadas com a mesma chave, poderão ser instaladas pelo atualizador sem desinstalar o app. Mantenha Shizuku, Spotify e Instagram instalados.
 
 O objetivo do teste é:
 
@@ -30,8 +30,9 @@ Os dois precisam tocar ao mesmo tempo por cinco minutos, sem pausa ou redução 
 - Dois APKs auxiliares com sons distintos, para testar regras por aplicativo antes de usar Spotify e Instagram.
 - Motor executado como shell por um `UserService` do Shizuku. As APIs internas de áudio ficam isoladas nesse motor.
 - Testes do gerenciamento de sessão e da restauração em caso de falha parcial.
+- Atualizador via releases públicos do GitHub, com conferência de SHA256, pacote, versão e assinatura antes de abrir o instalador do Android.
 
-O processamento ocorre localmente. O projeto não inclui captura nem retransmissão do áudio dos aplicativos. As fontes auxiliares não escolhem a própria saída: o destino efetivo depende das regras aplicadas pelo APK principal.
+O processamento de áudio ocorre localmente. Somente a consulta e o download de atualizações acessam o GitHub, mediante ação do usuário; diagnósticos não são enviados. O projeto não inclui captura nem retransmissão do áudio dos aplicativos. As fontes auxiliares não escolhem a própria saída: o destino efetivo depende das regras aplicadas pelo APK principal.
 
 ## Preparar o celular
 
@@ -70,7 +71,7 @@ Requisitos: JDK 17 ou superior compatível com Gradle 8.11.1, Android SDK com a 
 ./gradlew :app:assembleDebug :tone-player:assembleBluetoothDebug :tone-player:assemblePhoneDebug
 ```
 
-Para executar todos os checks e gerar os três APKs no Linux/macOS, use `./scripts/check-and-build.sh`. Depois, `python3 scripts/package-debug.py` reúne os APKs, instruções e checksums em `dist/audio-split-0.1.1-debug.zip`. O workflow também executa uma regressão em emulador Android 16 com `adb shell app_process`, verificando a identidade e o contexto usados pelo motor.
+Para executar todos os checks e gerar os APKs de desenvolvimento no Linux/macOS, use `./scripts/check-and-build.sh`. Depois, `python3 scripts/package-debug.py` reúne os APKs, instruções e checksums em `dist/`. O workflow também executa uma regressão em emulador Android 16 com `adb shell app_process`, verificando a identidade e o contexto usados pelo motor.
 
 No Windows, use `gradlew.bat` no lugar de `./gradlew`.
 

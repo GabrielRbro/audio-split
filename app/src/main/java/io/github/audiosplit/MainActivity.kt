@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.audiosplit.client.AudioSplitViewModel
+import io.github.audiosplit.client.UpdateViewModel
 import io.github.audiosplit.ui.AudioSplitScreen
 import io.github.audiosplit.ui.AudioSplitTheme
 
@@ -18,8 +19,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val model: AudioSplitViewModel = viewModel()
             val state by model.state.collectAsStateWithLifecycle()
+            val updates: UpdateViewModel = viewModel()
+            val updateState by updates.state.collectAsStateWithLifecycle()
             AudioSplitTheme {
-                AudioSplitScreen(state, model)
+                AudioSplitScreen(state, model, updateState, updates)
             }
         }
     }

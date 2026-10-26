@@ -2,6 +2,7 @@ package io.github.audiosplit.engine
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -11,6 +12,9 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Process
+import android.os.SystemClock
+import io.github.audiosplit.core.PlaybackRouteObservation
+import io.github.audiosplit.core.RouteMismatchMonitor
 import io.github.audiosplit.core.SessionController
 import io.github.audiosplit.core.SessionLease
 import io.github.audiosplit.core.SessionLifecycle
@@ -49,6 +53,11 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
     private var cleanupErrors: List<String> = emptyList()
     private var operationStage = "idle"
     private var preflightPassed = false
+    private var routeMonitor: RouteMismatchMonitor? = null
+    private var sessionStartedElapsedMs = 0L
+    private var lastRequestedRoutes: Map<Int, String> = emptyMap()
+    private val playbackHistory = ArrayDeque<JSONObject>()
+    private var routeFailure: JSONObject? = null
 
     private val poll = object : Runnable {
         override fun run() {
@@ -69,8 +78,14 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
                                     SessionStopCause.OUTPUT_DISCONNECTED -> "O dispositivo Bluetooth foi desconectado ou alterado."
                                     SessionStopCause.CLEANUP_RETRY -> "A sessão foi encerrada."
                                 }
-                                reportRestoration(stop.restoration, "disconnected", "DISCONNECTED",
-                                    "$reason As rotas temporárias foram removidas.")
+                                if (stop.cause == SessionStopCause.CLEANUP_RETRY && routeFailure != null) {
+                                    reportRestoration(stop.restoration, "blocked", "ROUTE_MISMATCH", ROUTE_MISMATCH_MESSAGE)
+                                } else {
+                                    reportRestoration(stop.restoration, "disconnected", "DISCONNECTED",
+                                        "$reason As rotas temporárias foram removidas.")
+                                }
+                            } else if (!closing && session.snapshot().active) {
+                                inspectPlaybackRoutes()
                             }
                         }
                     } catch (error: Exception) {
@@ -155,6 +170,9 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
         closing = false
         lastError = null
         cleanupErrors = emptyList()
+        lastRequestedRoutes = mapOf(firstUid to key(bluetooth), secondUid to key(speaker))
+        playbackHistory.clear()
+        routeFailure = null
         val result = session.begin(listOf(
             step("audio_policy_cleanup") { SessionLease { policy.unregister() } },
             step("bluetooth_uid_mix") {
@@ -169,6 +187,8 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
             },
         ))
         if (result.applied) {
+            routeMonitor = RouteMismatchMonitor(lastRequestedRoutes)
+            sessionStartedElapsedMs = SystemClock.elapsedRealtime()
             operationStage = "policy_registered"
             setState("applied_unverified", "APPLIED_UNVERIFIED", "Política registrada. Confirme as saídas e que os dois aplicativos continuam tocando ao mesmo tempo.")
         } else {
@@ -292,7 +312,10 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
             val cleanup = session.restore()
             cleanupErrors = cleanup.failures.map { "${it.name}: ${describe(it.error)}" }
             closing = !cleanup.restored
-            if (cleanup.restored) selectedBluetooth = null
+            if (cleanup.restored) {
+                selectedBluetooth = null
+                routeMonitor = null
+            }
             setState(if (cleanup.restored) "blocked" else "cleanup_failed", errorCode,
                 if (cleanup.restored) "A aplicação falhou. As rotas temporárias foram removidas; consulte o diagnóstico."
                 else "A aplicação falhou e a limpeza ainda está pendente. O backend continuará tentando remover a política.")
@@ -364,6 +387,7 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
         cleanupErrors = result.failures.map { "${it.name}: ${describe(it.error)}" }
         if (result.restored) {
             selectedBluetooth = null
+            routeMonitor = null
             closing = false
             setState(successPhase, successCode, successMessage)
         } else {
@@ -419,12 +443,55 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
                 runCatching {
                     configuration.javaClass.getMethod("getMutedBy").invoke(configuration) as Int
                 }.getOrNull()?.let { item.put("mutedBy", it) }
+                for ((method, field) in listOf("getSessionId" to "sessionId", "getPlayerInterfaceId" to "playerId")) {
+                    runCatching { configuration.javaClass.getMethod(method).invoke(configuration) as Int }
+                        .getOrNull()?.let { item.put(field, it) }
+                }
                 output.put(item)
             }
         } catch (error: Exception) {
             output.put(JSONObject().put("diagnosticError", describe(error)))
         }
         return output
+    }
+
+    /** Observe only the selected apps; never infer a route from the requested mix. */
+    private fun inspectPlaybackRoutes() {
+        val monitor = routeMonitor ?: return
+        val observed = playbackDiagnostics()
+        val targetEntries = JSONArray()
+        val samples = mutableListOf<PlaybackRouteObservation>()
+        var observationFailed = false
+        for (index in 0 until observed.length()) {
+            val entry = observed.getJSONObject(index)
+            if (entry.has("diagnosticError")) observationFailed = true
+            val uid = entry.optInt("uid", -1)
+            if (uid !in monitor.expectedRoutes) continue
+            targetEntries.put(entry)
+            // The installed policy matches MEDIA only. Notifications and calls are outside its scope.
+            if (entry.optInt("usage", -1) != AudioAttributes.USAGE_MEDIA) continue
+            val keys = entry.optJSONArray("observedDeviceKeys")
+            val devices = if (entry.optBoolean("routeObservationAvailable", false) && keys != null) {
+                (0 until keys.length()).map { keys.getString(it) }.toSet()
+            } else null
+            samples += PlaybackRouteObservation(uid,
+                if (entry.has("active")) entry.getBoolean("active") else null, devices)
+        }
+        val snapshot = JSONObject().put("elapsedSinceApplyMs", SystemClock.elapsedRealtime() - sessionStartedElapsedMs)
+            .put("generatedAtEpochMs", System.currentTimeMillis()).put("players", targetEntries)
+        if (observationFailed) snapshot.put("observationFailed", true)
+        playbackHistory.addLast(snapshot)
+        while (playbackHistory.size > MAX_PLAYBACK_HISTORY) playbackHistory.removeFirst()
+        // A failed read invalidates the sample even if it returned some earlier entries.
+        val mismatch = monitor.sample(SystemClock.elapsedRealtime() - sessionStartedElapsedMs,
+            if (observationFailed) emptyList() else samples)
+        if (!mismatch) return
+        routeFailure = JSONObject().put("code", "ROUTE_MISMATCH")
+            .put("generatedAtEpochMs", System.currentTimeMillis()).put("players", targetEntries)
+        lastError = "Actual playback devices differ from the requested per-app routes in three consecutive observations."
+        operationStage = "restore_after_route_mismatch"
+        closing = true
+        restoreInternal("blocked", "ROUTE_MISMATCH", ROUTE_MISMATCH_MESSAGE)
     }
 
     private fun envelope(includePlayback: Boolean = false): String {
@@ -468,6 +535,14 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
             .put("privilegedSessionAlive", privilegedServer?.isBinderAlive == true)
             .put("testMode", sessionTestMode)
             .put("selectedBluetoothKey", selectedBluetooth ?: JSONObject.NULL)
+            .put("requestedRoutes", JSONArray(lastRequestedRoutes.map { (uid, device) ->
+                JSONObject().put("uid", uid).put("deviceKey", device)
+            }))
+            .put("routeFailure", routeFailure ?: JSONObject.NULL)
+            .put("playbackHistory", JSONArray(playbackHistory.toList()))
+            .put("routeMismatchDetection", "both_apps_active_complete_devices_three_samples_after_grace")
+            .put("policyMechanism", "uid_media_render")
+            .put("outputIsolationVerified", false)
             .put("retainedResources", JSONArray(session.snapshot().retainedResources))
             .put("routeVerified", false)
             .put("simultaneousPlaybackVerified", false)
@@ -532,6 +607,8 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
         private const val SHELL_UID = 2000
         private const val ROUTING_PERMISSION = "android.permission.MODIFY_AUDIO_ROUTING"
         private const val POLL_INTERVAL_MS = 1_500L
+        private const val MAX_PLAYBACK_HISTORY = 12
+        private const val ROUTE_MISMATCH_MESSAGE = "O Android manteve áudio na saída errada enquanto os dois apps tocavam. A separação falhou e a política foi removida. Exporte o diagnóstico para investigar a rota compartilhada do sistema."
         private val MEDIA_PACKAGES = listOf("com.spotify.music", "com.instagram.android")
         private val TEST_PACKAGES = listOf("io.github.audiosplit.tone.bluetooth", "io.github.audiosplit.tone.phone")
     }

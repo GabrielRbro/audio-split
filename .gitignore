@@ -6,5 +6,7 @@ local.properties
 *.iml
 *.jks
 *.keystore
+*.p12
+audio-split-signing-setup.json
 dist/
 .DS_Store

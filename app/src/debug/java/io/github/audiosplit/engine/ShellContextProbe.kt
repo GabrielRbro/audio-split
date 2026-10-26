@@ -69,7 +69,18 @@ object ShellContextProbe {
             check(routingPermission == PackageManager.PERMISSION_GRANTED) { "Shell lacks MODIFY_AUDIO_ROUTING on this system image." }
 
             val audio = requireNotNull(corrected.getSystemService(AudioManager::class.java))
+            val updatesAuthority = "$APP_PACKAGE.updates"
+            val provider = original.packageManager.resolveContentProvider(
+                updatesAuthority, PackageManager.ComponentInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
+            ) ?: error("The update FileProvider is missing from the installed APK.")
+            check(provider.packageName == APP_PACKAGE && !provider.exported && provider.grantUriPermissions) {
+                "The update FileProvider must belong to the app and grant access only through URI permissions."
+            }
+            // Load installed metadata without crossing into the app's private cache as shell.
+            provider.loadXmlMetaData(original.packageManager, "android.support.FILE_PROVIDER_PATHS")
+                ?.close() ?: error("The installed update provider has no readable path configuration.")
             report.put("outputDeviceCount", audio.getDevices(AudioManager.GET_DEVICES_OUTPUTS).size)
+                .put("updateProviderReady", true)
                 .put("audioPolicyRegistered", false)
                 .put("routesModified", false)
                 .put("passed", true)

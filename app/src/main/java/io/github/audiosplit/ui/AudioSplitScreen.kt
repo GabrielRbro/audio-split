@@ -66,11 +66,14 @@ import io.github.audiosplit.R
 import io.github.audiosplit.BuildConfig
 import io.github.audiosplit.client.AudioSplitUiState
 import io.github.audiosplit.client.AudioSplitViewModel
+import io.github.audiosplit.client.UpdateUiState
+import io.github.audiosplit.client.UpdateViewModel
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 
 @Composable
-fun AudioSplitScreen(state: AudioSplitUiState, model: AudioSplitViewModel) {
+fun AudioSplitScreen(state: AudioSplitUiState, model: AudioSplitViewModel,
+    updateState: UpdateUiState, updates: UpdateViewModel) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) model.export(uri)
@@ -130,6 +133,7 @@ fun AudioSplitScreen(state: AudioSplitUiState, model: AudioSplitViewModel) {
             if (state.exportMessage != null) Text(state.exportMessage, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             ObservationsCard(state, model)
             TechnicalDetails(state)
+            UpdateCard(updateState, updates::check, { updates.downloadAndInstall(model) }, updates::cancel)
             HelpCard()
             Text(
                 "O botão Restaurar encerra o teste. Alternar para outro app mantém a sessão. Após reconectar a caixa ou reiniciar o Shizuku, execute Diagnosticar e aplique novamente.",
