@@ -33,7 +33,6 @@ O pacote de distribuição inclui `TEST-RESULTS.json`, com a contagem extraída 
 
 ## Pendente
 
-- Checks da versão 0.2.0, incluindo os novos testes do atualizador e detecção de rotas divergentes.
 - Configuração única da assinatura de release, conforme [updates.md](updates.md), para publicar o primeiro APK que aceita atualizações futuras.
 - Correção da falha física relatada no POCO F7: iniciar o Spotify leva o áudio do Instagram para o Bluetooth. O novo diagnóstico não equivale a uma correção comprovada.
 
@@ -46,3 +45,11 @@ O teste físico da 0.1.0 revelou que a pré-verificação rejeitava o contexto d
 O workflow da correção exige uma sonda em emulador Android 16, executada como UID shell 2000. A sonda precisa reproduzir a rejeição da versão anterior, validar a atribuição corrigida e ler os dispositivos de áudio. Ela não registra políticas nem comprova Bluetooth. O artefato só é publicado após essa etapa passar; o relatório aparece em `app/build/reports/shell-context-probe.txt`.
 
 O serviço Shizuku também recebe a nova versão do build para substituir seu processo anterior, e a interface só habilita aplicar quando o diagnóstico está aprovado. O arquivo `TEST-RESULTS.json` do pacote informa os resultados reais da compilação correspondente.
+
+## Versão 0.2.0
+
+A [execução 40403172420](https://github.com/GabrielRbro/audio-split/actions/runs/40403172420), commit `efe4267a2632638b1810d86fd50ae47a2aea620f`, passou em todos os checks de desenvolvimento: 48 testes, zero falhas, erros ou casos ignorados; lints e compilação dos três APKs; sonda shell no Android 16; abertura real da tela sem Shizuku e verificação do FileProvider de atualização instalado.
+
+O job de release não compilou nem publicou o APK assinado porque o secret `ANDROID_SIGNING_CONFIG` ainda não estava configurado. O resultado verde dessa execução não significa que uma release pública esteja disponível. A instalação real de uma atualização pelo próprio aplicativo também continua pendente de validação.
+
+Os 23 testes novos cobrem protocolo/integridade/URLs do atualizador e detecção de divergência persistente das rotas. O emulador não comprova o roteamento Bluetooth do POCO.
