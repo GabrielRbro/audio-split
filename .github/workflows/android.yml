@@ -31,12 +31,34 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Verify and assemble
         run: ./gradlew :core:test :app:testDebugUnitTest :app:lintDebug :tone-player:lintBluetoothDebug :tone-player:lintPhoneDebug :app:assembleDebug :tone-player:assembleBluetoothDebug :tone-player:assemblePhoneDebug
+      - name: Enable KVM for Android 16 regression
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify shell context on Android 16
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-boot-timeout: 600
+          script: scripts/test-shell-context.sh
       - name: Package debug APKs
         run: python3 scripts/package-debug.py
       - uses: actions/upload-artifact@v4
         with:
           name: audio-split-debug
-          path: dist/audio-split-0.1.0-debug/
+          path: dist/audio-split-0.1.1-debug/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload main APK separately
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-split-0.1.1-apk
+          path: dist/audio-split-0.1.1-debug/audio-split-0.1.1-debug.apk
           if-no-files-found: error
           retention-days: 14
       - name: Preserve check reports
@@ -47,5 +69,6 @@ jobs:
           path: |
             **/build/reports/tests/
             **/build/reports/lint-results-*.html
+            app/build/reports/shell-context-probe.txt
           if-no-files-found: ignore
           retention-days: 14

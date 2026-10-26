@@ -2,13 +2,17 @@
 
 Aplicativo experimental para investigar a separação do áudio de dois aplicativos entre uma caixa Bluetooth e o alto-falante do celular, usando Shizuku e sem root.
 
-**Estado: não testado no aparelho físico.** O primeiro alvo é o POCO F7 com Android 16 e HyperOS 3.0.303.0.WOLMIXM.C06. A existência de permissões ou o registro de uma política de áudio não comprovam que as duas saídas funcionam simultaneamente. Consulte o [registro de compatibilidade](docs/compatibility.md).
+**Estado da versão 0.1.1: teste físico pendente.** O primeiro alvo é o POCO F7 com Android 16 e HyperOS 3.0.303.0.WOLMIXM.C06. A versão 0.1.0 foi bloqueada por uma verificação incorreta do contexto Android; a correção está em 0.1.1. A existência de permissões ou o registro de uma política de áudio não comprovam que as duas saídas funcionam simultaneamente. Consulte o [registro de compatibilidade](docs/compatibility.md).
 
 **Os três APKs foram compilados e os checks automatizados passaram no GitHub Actions.** Veja o [estado da verificação](docs/build-status.md).
 
 Também é possível [gerar os APKs pelo GitHub Actions](docs/github-build.md), usando um repositório privado.
 
-Para baixar, abra [GitHub Actions](https://github.com/GabrielRbro/audio-split/actions/workflows/android.yml), escolha a execução mais recente concluída com sucesso e baixe o artefato **audio-split-debug**. Ele reúne o aplicativo principal, os dois tons auxiliares, instruções e checksums. O teste no celular começa em **Preparar o celular**, abaixo.
+Para baixar, abra [GitHub Actions](https://github.com/GabrielRbro/audio-split/actions/workflows/android.yml), escolha a execução mais recente concluída com sucesso e baixe **audio-split-0.1.1-apk**, que contém somente o aplicativo principal. Os geradores Tom A e Tom B são opcionais, disponíveis junto das instruções e checksums no pacote completo **audio-split-debug**. O teste no celular começa em **Preparar o celular**, abaixo.
+
+### Atualização de 0.1.0 para 0.1.1
+
+A versão 0.1.1 corrige uma identificação incorreta do contexto Android que podia bloquear a operação mesmo com o Shizuku conectado como shell. Desinstale somente o Audio Split antigo antes de instalar o novo APK, pois as compilações debug usam assinaturas diferentes. Mantenha o Shizuku, Spotify e Instagram instalados. Depois, autorize novamente o Audio Split no Shizuku e execute **Diagnosticar** antes de aplicar as rotas.
 
 O objetivo do teste é:
 
@@ -44,7 +48,7 @@ Após reiniciar o celular, confira novamente o estado do Shizuku. As rotas do pr
 
 ## Executar o teste
 
-Comece pelos aplicativos auxiliares. Depois repita com os aplicativos oficiais no perfil principal do Android.
+Para testar diretamente seu uso, selecione **Spotify + Instagram**, que já vem marcado. Os aplicativos auxiliares são uma opção de diagnóstico para investigar as saídas com sinais conhecidos.
 
 1. No APK principal, selecione o modo de teste e a caixa conectada.
 2. Toque em **Aplicar separação**. Um estado de configuração aplicada ainda precisa de confirmação auditiva.
@@ -62,11 +66,11 @@ Se um aplicativo pausar, ficar mudo ou reduzir seu volume quando o outro começa
 Requisitos: JDK 17 ou superior compatível com Gradle 8.11.1, Android SDK com a plataforma API 36 e aceitação das licenças do SDK. O projeto usa Android Gradle Plugin 8.10.1 e Kotlin 2.1.20. Configure o caminho do SDK em `local.properties` (`sdk.dir=...`) ou no ambiente do Android SDK; não inclua esse arquivo em commits.
 
 ```sh
-./gradlew :core:test :app:lintDebug
+./gradlew :core:test :app:testDebugUnitTest :app:lintDebug
 ./gradlew :app:assembleDebug :tone-player:assembleBluetoothDebug :tone-player:assemblePhoneDebug
 ```
 
-Para executar todos os checks e gerar os três APKs no Linux/macOS, use `./scripts/check-and-build.sh`. Depois, `python3 scripts/package-debug.py` reúne os APKs, instruções e checksums em `dist/audio-split-0.1.0-debug.zip`. O workflow em `.github/workflows/android.yml` executa as mesmas verificações quando o projeto for publicado.
+Para executar todos os checks e gerar os três APKs no Linux/macOS, use `./scripts/check-and-build.sh`. Depois, `python3 scripts/package-debug.py` reúne os APKs, instruções e checksums em `dist/audio-split-0.1.1-debug.zip`. O workflow também executa uma regressão em emulador Android 16 com `adb shell app_process`, verificando a identidade e o contexto usados pelo motor.
 
 No Windows, use `gradlew.bat` no lugar de `./gradlew`.
 

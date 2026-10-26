@@ -63,6 +63,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.audiosplit.R
+import io.github.audiosplit.BuildConfig
 import io.github.audiosplit.client.AudioSplitUiState
 import io.github.audiosplit.client.AudioSplitViewModel
 import kotlinx.coroutines.delay
@@ -110,7 +111,7 @@ fun AudioSplitScreen(state: AudioSplitUiState, model: AudioSplitViewModel) {
                 }
                 Button(
                     onClick = model::apply,
-                    enabled = state.controlsEnabled && !state.active && state.selectedBluetoothKey != null && state.targetsInstalled,
+                    enabled = state.canApply,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Aplicar separação", modifier = Modifier.padding(vertical = 6.dp))
@@ -131,7 +132,7 @@ fun AudioSplitScreen(state: AudioSplitUiState, model: AudioSplitViewModel) {
             TechnicalDetails(state)
             HelpCard()
             Text(
-                "O botão Restaurar encerra o teste. Alternar para outro app mantém a sessão. Após desconectar a caixa ou reiniciar o Shizuku, aplique novamente.",
+                "O botão Restaurar encerra o teste. Alternar para outro app mantém a sessão. Após reconectar a caixa ou reiniciar o Shizuku, execute Diagnosticar e aplique novamente.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -147,7 +148,7 @@ private fun Header() {
             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
         Column {
             Text("Audio Split", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-            Text("PROTÓTIPO EXPERIMENTAL · 0.1.0", style = MaterialTheme.typography.labelSmall,
+            Text("PROTÓTIPO EXPERIMENTAL · ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary)
         }
     }
@@ -184,8 +185,8 @@ private fun ConfigurationCard(state: AudioSplitUiState, model: AudioSplitViewMod
     val selected = state.snapshot?.bluetoothDevices?.firstOrNull { it.key == state.selectedBluetoothKey }
     SectionCard {
         Text("1. Escolha o teste", style = MaterialTheme.typography.titleMedium)
-        ModeRow("Sons auxiliares", "Tom A na caixa · Tom B no celular", state.testMode, editable) { model.setTestMode(true) }
         ModeRow("Spotify + Instagram", "Spotify na caixa · Instagram no celular", !state.testMode, editable) { model.setTestMode(false) }
+        ModeRow("Sons auxiliares (opcional)", "Requer os APKs Tom A e Tom B", state.testMode, editable) { model.setTestMode(true) }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Text("2. Selecione a caixa Bluetooth", style = MaterialTheme.typography.titleMedium)
         Box(Modifier.fillMaxWidth()) {

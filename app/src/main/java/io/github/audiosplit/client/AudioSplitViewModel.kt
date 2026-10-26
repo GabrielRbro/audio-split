@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
+import io.github.audiosplit.BuildConfig
 import io.github.audiosplit.ipc.IAudioSplitService
 import java.time.Instant
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +40,7 @@ data class BackendSnapshot(
     val code: String,
     val message: String,
     val active: Boolean,
+    val preflightPassed: Boolean,
     val devices: List<OutputDevice>,
     val packages: List<InstalledTarget>,
 ) {
@@ -56,6 +58,7 @@ data class BackendSnapshot(
                 code = json.getString("code"),
                 message = json.getString("message"),
                 active = json.getBoolean("active"),
+                preflightPassed = json.optJSONObject("details")?.optBoolean("preflightPassed", false) == true,
                 devices = List(devices.length()) { index ->
                     val item = devices.getJSONObject(index)
                     OutputDevice(item.getString("key"), item.optString("label", "Bluetooth"), item.getInt("type"))
@@ -83,7 +86,7 @@ data class AudioSplitUiState(
     val backendConnected: Boolean = false,
     val connecting: Boolean = false,
     val busy: Boolean = false,
-    val testMode: Boolean = true,
+    val testMode: Boolean = false,
     val selectedBluetoothKey: String? = null,
     val snapshot: BackendSnapshot? = null,
     val observations: ListeningObservations = ListeningObservations(),
@@ -92,6 +95,12 @@ data class AudioSplitUiState(
 ) {
     val active: Boolean get() = snapshot?.active == true
     val controlsEnabled: Boolean get() = backendConnected && !busy && !connecting
+    val canApply: Boolean get() {
+        val current = snapshot ?: return false
+        return controlsEnabled && !active && current.preflightPassed
+            && current.code in setOf("READY", "RESTORED") && targetsInstalled
+            && current.bluetoothDevices.any { it.key == selectedBluetoothKey }
+    }
     val targetsInstalled: Boolean get() {
         val expected = if (testMode) TEST_PACKAGES else MEDIA_PACKAGES
         return expected.all { target -> snapshot?.packages?.any { it.packageName == target && it.installed } == true }
@@ -116,10 +125,10 @@ class AudioSplitViewModel(application: Application, private val savedState: Save
     private var closed = false
     private val args = Shizuku.UserServiceArgs(
         ComponentName(application.packageName, "io.github.audiosplit.engine.AudioSplitUserService"),
-    ).processNameSuffix("audio_split").daemon(false).version(1).tag("audio-split-android16")
+    ).processNameSuffix("audio_split").daemon(false).version(BuildConfig.VERSION_CODE).tag("audio-split-android16")
 
     private val _state = MutableStateFlow(AudioSplitUiState(
-        testMode = savedState["testMode"] ?: true,
+        testMode = savedState["testMode"] ?: false,
         selectedBluetoothKey = savedState["bluetoothKey"],
     ))
     val state = _state.asStateFlow()
@@ -265,9 +274,8 @@ class AudioSplitViewModel(application: Application, private val savedState: Save
 
     fun apply() {
         val current = _state.value
-        if (!current.controlsEnabled || current.active) return
+        if (!current.canApply) return
         val key = current.selectedBluetoothKey ?: return
-        if (!current.targetsInstalled) return
         _state.update { it.copy(observations = ListeningObservations(), exportMessage = null) }
         operate { it.applyRoutes(current.testMode, key) }
     }
@@ -290,7 +298,7 @@ class AudioSplitViewModel(application: Application, private val savedState: Save
         val report = JSONObject()
             .put("reportSchemaVersion", 1)
             .put("exportedAt", timestamp)
-            .put("prototype", "Audio Split 0.1.0")
+            .put("prototype", "Audio Split ${BuildConfig.VERSION_NAME}")
             .put("device", JSONObject().put("manufacturer", Build.MANUFACTURER).put("model", Build.MODEL)
                 .put("sdk", Build.VERSION.SDK_INT).put("build", Build.DISPLAY).put("securityPatch", Build.VERSION.SECURITY_PATCH))
             .put("clientConnectedAtExport", current.backendConnected)

@@ -1,8 +1,14 @@
 # Compatibilidade
 
-**Estado geral: NÃO TESTADO NO APARELHO.**
+**Estado geral: ROTEAMENTO AINDA NÃO COMPROVADO.** A versão 0.1.0 foi testada e bloqueada na pré-verificação; a versão 0.1.1 aguarda novo teste físico.
 
-Este documento identifica o alvo inicial e reserva espaço para evidências do teste físico. Não há afirmação de suporte ao POCO F7, ao HyperOS em geral ou a outras marcas.
+Este documento identifica o alvo inicial e registra as evidências disponíveis. Não há afirmação de suporte ao POCO F7, ao HyperOS em geral ou a outras marcas.
+
+## Observação recebida na versão 0.1.0
+
+O usuário relatou Spotify e Instagram reproduzindo no Bluetooth. A captura mostra o Shizuku conectado, Android 16 e a saída **soundcore Liberty 4 NC** selecionada. A mensagem de estado foi: “Este serviço precisa executar como shell por meio do Shizuku, sem root.”
+
+Essa mensagem corresponde à pré-verificação incorreta do contexto: nenhuma política havia sido aplicada. O resultado não avalia se o firmware aceita as duas saídas, pois o teste foi bloqueado antes dessa etapa. A correção 0.1.1 remove essa confusão entre identidade do processo e atribuição do contexto, preservando a exigência de UID shell e da permissão efetiva.
 
 ## Alvo inicial informado pelo usuário
 

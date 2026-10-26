@@ -24,7 +24,8 @@ import kotlin.system.exitProcess
 /** Runs in Shizuku's shell UserService process, never in the application's normal UID. */
 class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
     private val lock = Any()
-    private val shellContext = context.createPackageContext("com.android.shell", 0)
+    private val audioContext = ShellAudioContext.create(context)
+    private val shellContext = audioContext.context
     private val audio = requireNotNull(shellContext.getSystemService(AudioManager::class.java)) {
         "The shell context did not provide AudioManager."
     }
@@ -47,6 +48,7 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
     private var lastError: String? = null
     private var cleanupErrors: List<String> = emptyList()
     private var operationStage = "idle"
+    private var preflightPassed = false
 
     private val poll = object : Runnable {
         override fun run() {
@@ -312,12 +314,15 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
     }
 
     private fun preflight(requireBluetooth: Boolean): Pair<String, String>? {
-        if (Process.myUid() != SHELL_UID || shellContext.packageName != "com.android.shell"
-            || shellContext.attributionSource.uid != SHELL_UID
-            || shellContext.attributionSource.packageName != "com.android.shell") {
-            return "PERMISSION_DENIED" to "Este serviço precisa executar como shell por meio do Shizuku, sem root."
+        preflightPassed = false
+        if (Process.myUid() != SHELL_UID) {
+            return "PERMISSION_DENIED" to "O motor iniciou com UID ${Process.myUid()}; esperado shell (2000). Reinicie o Shizuku pela depuração sem fio."
         }
-        if (shellContext.checkCallingOrSelfPermission(ROUTING_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
+        if (!audioContext.ready) {
+            lastError = audioContext.error
+            return "CONTEXT_UNAVAILABLE" to "Não foi possível preparar o contexto de áudio do Android. Exporte o diagnóstico para identificar a incompatibilidade."
+        }
+        if (!hasRoutingPermission()) {
             return "PERMISSION_DENIED" to "O sistema não concedeu MODIFY_AUDIO_ROUTING ao processo shell."
         }
         if (Build.VERSION.SDK_INT != 36) return "UNSUPPORTED" to "Esta prova de conceito suporta somente Android 16 (API 36)."
@@ -333,8 +338,13 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
         if (requireBluetooth && devices().none(::isBluetooth)) {
             return "NO_BLUETOOTH" to "Conecte e ative uma caixa ou fone Bluetooth para áudio de mídia."
         }
+        preflightPassed = true
         return null
     }
+
+    private fun hasRoutingPermission(): Boolean = shellContext.checkPermission(
+        ROUTING_PERMISSION, Process.myPid(), Process.myUid(),
+    ) == PackageManager.PERMISSION_GRANTED
 
     private fun policyBackend(): Android16AudioPolicy = backend
         ?: Android16AudioPolicy(shellContext, audio).also { backend = it }
@@ -442,9 +452,18 @@ class AudioSplitUserService(context: Context) : IAudioSplitService.Stub() {
             .put("model", Build.MODEL)
             .put("buildDisplay", Build.DISPLAY)
             .put("effectiveUid", Process.myUid())
+            .put("contextReady", audioContext.ready)
+            .put("contextError", audioContext.error ?: JSONObject.NULL)
+            .put("contextPackage", shellContext.packageName)
+            .put("contextOpPackage", shellContext.opPackageName)
+            .put("inheritedContextPackage", audioContext.inheritedPackage ?: JSONObject.NULL)
+            .put("inheritedOpPackage", audioContext.inheritedOpPackage ?: JSONObject.NULL)
+            .put("inheritedAttributionUid", audioContext.inheritedAttributionUid ?: JSONObject.NULL)
+            .put("inheritedAttributionPackage", audioContext.inheritedAttributionPackage ?: JSONObject.NULL)
             .put("attributionUid", shellContext.attributionSource.uid)
             .put("attributionPackage", shellContext.attributionSource.packageName)
-            .put("routingPermission", shellContext.checkCallingOrSelfPermission(ROUTING_PERMISSION) == PackageManager.PERMISSION_GRANTED)
+            .put("routingPermission", hasRoutingPermission())
+            .put("preflightPassed", preflightPassed)
             .put("clientAttached", client?.isBinderAlive == true)
             .put("privilegedSessionAlive", privilegedServer?.isBinderAlive == true)
             .put("testMode", sessionTestMode)

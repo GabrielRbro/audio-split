@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 artifacts = {
-    "audio-split-0.1.0-debug.apk": root / "app/build/outputs/apk/debug/app-debug.apk",
+    "audio-split-0.1.1-debug.apk": root / "app/build/outputs/apk/debug/app-debug.apk",
     "tom-a-bluetooth-0.1.0-debug.apk": root / "tone-player/build/outputs/apk/bluetooth/debug/tone-player-bluetooth-debug.apk",
     "tom-b-celular-0.1.0-debug.apk": root / "tone-player/build/outputs/apk/phone/debug/tone-player-phone-debug.apk",
 }
@@ -38,7 +38,7 @@ if totals["failures"] or totals["errors"] or totals["skipped"]:
 print("TEST RESULTS: " + json.dumps(totals), flush=True)
 
 dist = root / "dist"
-bundle = dist / "audio-split-0.1.0-debug"
+bundle = dist / "audio-split-0.1.1-debug"
 bundle.mkdir(parents=True, exist_ok=True)
 (bundle / "TEST-RESULTS.json").write_text(json.dumps({
     "schemaVersion": 1, "commit": os.environ.get("GITHUB_SHA"),
@@ -57,7 +57,7 @@ for document in sorted((root / "docs").glob("*.md")):
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(document, target)
 
-archive = dist / "audio-split-0.1.0-debug.zip"
+archive = dist / "audio-split-0.1.1-debug.zip"
 with ZipFile(archive, "w", ZIP_DEFLATED) as output:
     for path in sorted(bundle.rglob("*")):
         if path.is_file():

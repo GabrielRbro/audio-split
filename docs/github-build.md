@@ -18,12 +18,16 @@ Depois da execução, abra **Actions → Android checks and debug APKs → execu
 
 | APK | Finalidade |
 | --- | --- |
-| `audio-split-0.1.0-debug.apk` | Aplicativo Audio Split com Shizuku |
+| `audio-split-0.1.1-debug.apk` | Aplicativo Audio Split com Shizuku |
 | `tom-a-bluetooth-0.1.0-debug.apk` | Tom A, destino desejado Bluetooth |
 | `tom-b-celular-0.1.0-debug.apk` | Tom B, destino desejado alto-falante |
 
 O mesmo artefato inclui instruções e `SHA256SUMS.txt`, com os checksums dos três APKs.
 
 O arquivo `TEST-RESULTS.json` contém o resultado dos testes extraído dos relatórios JUnit dessa compilação. A etapa de empacotamento também imprime a contagem no log e recusa relatórios vazios, falhas, erros ou casos ignorados.
+
+O artefato **audio-split-0.1.1-apk** oferece somente o APK principal. Instale esse arquivo para Spotify + Instagram; Tom A e Tom B são opcionais. Ao substituir 0.1.0, desinstale apenas o Audio Split anterior e autorize novamente o novo aplicativo no Shizuku.
+
+A partir de 0.1.1, o CI também reproduz a falha antiga de atribuição em Android 16 e valida o contexto corrigido sob UID shell 2000. Esse teste não possui Bluetooth e não comprova a separação das saídas no POCO.
 
 Uma execução com falha precisa ser corrigida antes de considerar os APKs prontos. Uma execução com sucesso comprova a compilação e os checks automatizados; o comportamento físico continua dependendo do [teste no POCO F7](test-protocol.md).

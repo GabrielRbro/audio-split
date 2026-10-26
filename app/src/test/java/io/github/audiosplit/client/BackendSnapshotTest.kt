@@ -17,6 +17,21 @@ class BackendSnapshotTest {
         .put("devices", JSONArray())
         .put("packages", JSONArray())
 
+    private fun applicableReport(code: String = "READY", preflightPassed: Boolean = true): JSONObject = report(code)
+        .put("details", JSONObject().put("preflightPassed", preflightPassed))
+        .put("devices", JSONArray()
+            .put(JSONObject().put("key", "a2dp").put("label", "Caixa").put("type", 8)))
+        .put("packages", JSONArray()
+            .put(JSONObject().put("packageName", "com.spotify.music").put("installed", true))
+            .put(JSONObject().put("packageName", "com.instagram.android").put("installed", true)))
+
+    private fun applicableState(json: JSONObject = applicableReport()): AudioSplitUiState = AudioSplitUiState(
+        backendConnected = true,
+        testMode = false,
+        selectedBluetoothKey = "a2dp",
+        snapshot = BackendSnapshot.parse(json.toString()),
+    )
+
     @Test fun internalSpeakerIsNeverOfferedAsBluetoothDestination() {
         val json = report().put("devices", JSONArray()
             .put(JSONObject().put("key", "speaker").put("label", "Celular").put("type", 2))
@@ -32,6 +47,7 @@ class BackendSnapshotTest {
         val state = AudioSplitUiState(backendConnected = true, snapshot = parsed)
         assertTrue(state.active)
         assertTrue(state.controlsEnabled)
+        assertFalse(state.canApply)
         assertEquals("ERROR", parsed.code)
     }
 
@@ -53,5 +69,44 @@ class BackendSnapshotTest {
         val parsed = BackendSnapshot.parse(raw)
         assertEquals("READY", parsed.code)
         assertTrue(JSONObject(parsed.raw).getJSONObject("futureDiagnosticField").getBoolean("example"))
+    }
+
+    @Test fun validPreflightWithInstalledTargetsAndCurrentBluetoothAllowsApply() {
+        assertTrue(applicableState().canApply)
+    }
+
+    @Test fun blockedDiagnosticPreventsApplyEvenWhenShizukuIsConnected() {
+        for (code in listOf("PERMISSION_DENIED", "UNSUPPORTED", "ERROR", "NO_BLUETOOTH", "DISCONNECTED")) {
+            val state = applicableState(applicableReport(code = code))
+            assertTrue(state.controlsEnabled)
+            assertFalse("Blocked diagnostic must not enable Apply: $code", state.canApply)
+        }
+    }
+
+    @Test fun oldServiceWithoutPreflightFlagDoesNotEnableApply() {
+        val json = applicableReport()
+        json.remove("details")
+        val state = applicableState(json)
+        assertFalse(state.snapshot!!.preflightPassed)
+        assertFalse(state.canApply)
+    }
+
+    @Test fun readyLabelAloneDoesNotSubstituteForPassedPreflight() {
+        assertFalse(applicableState(applicableReport(preflightPassed = false)).canApply)
+    }
+
+    @Test fun busyConnectingOrDisconnectedClientDoesNotAllowApply() {
+        val state = applicableState()
+        assertFalse(state.copy(busy = true).canApply)
+        assertFalse(state.copy(connecting = true).canApply)
+        assertFalse(state.copy(backendConnected = false).canApply)
+    }
+
+    @Test fun staleBluetoothSelectionDoesNotAllowApply() {
+        assertFalse(applicableState().copy(selectedBluetoothKey = "old-device").canApply)
+    }
+
+    @Test fun restoredSessionCanBeAppliedAgainWithPassedPreflight() {
+        assertTrue(applicableState(applicableReport(code = "RESTORED")).canApply)
     }
 }
